@@ -214,9 +214,18 @@ pnpm dev
 - **Layout:** การ์ด login แบบ split-screen บน desktop (`lg:` breakpoint), แสดงแค่ฝั่งขวาบน mobile/tablet
 - **Color palette:** โทนฟ้าอ่อน (light blue gradient) + ขาว + น้ำเงิน `#0F4C81` สำหรับ accent
 - **Typography:** Geist Sans สำหรับ body/heading
-- **Signature element:** ภาพประกอบโรงงาน/อุตสาหกรรมในฝั่งซ้าย (factory skyline, robotic arm, smokestacks)
+- **Signature element:** ภาพโรงงานฟ้าอ่อนแบบ reference พร้อมแขนโรบอท กล่องสินค้า รถบรรทุก ตึกโรงงาน ปล่องควัน และคลื่น foreground ที่ซ้อนกันแบบโปร่งแสง
 - **Card style:** การ์ดสีขาว มุมมน มีเงา โลโก้อยู่กึ่งกลางด้านบน
 - **Accessibility:** visible labels, focus rings, password visibility toggle, error alerts with `role="alert"`
+
+### 5.1.2 Current Login Animation Design
+
+- **Component:** `app/login/_components/factory-illustration.tsx`
+- **Intent:** The left-panel animation should closely follow the provided reference image: soft, low-contrast, industrial, and secondary to the hero copy.
+- **Scene:** A pale blue factory silhouette sits along the lower part of the hero with smokestacks, a robotic arm, moving boxes, a small service robot, a truck, translucent smoke, dot-grid detail, and layered wave foreground.
+- **Motion loop:** The robot breathes subtly, packages drift along the production line, the truck slides slightly, the small robot moves in place, the factory skyline gently lifts, and smoke rises from the stacks.
+- **CSS hooks:** Motion tokens live in `app/globals.css` under Tailwind v4 `@theme inline`: `animate-reference-robot`, `animate-package-flow`, `animate-truck-drift`, `animate-stack-smoke`, `animate-factory-breathe`, and `animate-mini-robot`.
+- **Accessibility:** The illustration remains `aria-hidden="true"` and global `prefers-reduced-motion: reduce` disables long-running animation for users who request reduced motion.
 
 ### 5.2 Build Workflow
 
@@ -266,6 +275,12 @@ pnpm lint
 
 | Date | Change | By |
 |------|--------|-----|
+| 2026-07-08 | Reworked login hero animation to match the provided reference image with soft factory silhouette, robotic arm, truck, packages, smokestacks, and layered blue foreground waves | AI Assistant |
+| 2026-07-08 | Redesigned login hero animation as a robotic welding production cell with conveyor ticks, traveling weld head, seam draw, spark shower, and reduced-motion support | AI Assistant |
+| 2026-07-08 | Added subtle SVG animations to login page illustration (smoke, dots, robotic arm, conveyor) | AI Assistant |
+| 2026-07-08 | Redesigned illustration to central connecting robot with animated arms and glowing data beams to surrounding machine nodes | AI Assistant |
+| 2026-07-08 | Enhanced login page with animated machinery (rotating gears, conveyor, robotic arm) and glowing connection lights between machines | AI Assistant |
+| 2026-07-08 | Improved login page background illustration to better match reference image with soft waves and dot grid | AI Assistant |
 | 2026-07-08 | Redesigned login page to match reference image: light theme, centered card, factory illustration, and reference-style form | AI Assistant |
 | 2026-07-08 | Updated all login page logo references to use `/cps-logo.png` | AI Assistant |
 | 2026-07-08 | Implemented Login Page (`/`) with split-screen layout, animated production line illustration, and responsive design | AI Assistant |
