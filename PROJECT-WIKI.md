@@ -15,7 +15,7 @@
 - **Font:** Geist + Geist Mono (via `next/font/google`)
 - **Language:** TypeScript
 - **Package Manager:** pnpm
-- **Status:** มีหน้า Login ที่ `/` และหน้า Dashboard placeholder ที่ `/dashboard` รอเชื่อมต่อ external login API
+- **Status:** มีหน้า Login ที่ `/`, Dashboard UI ที่ `/dashboard` พร้อม nested layout/sidebar, และรอเชื่อมต่อ external login API / production data จริง
 
 ---
 
@@ -30,7 +30,11 @@ d:\Project-2026\Project-CCI\cps/
 │   ├── page.tsx                  # Login page ("/")
 │   ├── globals.css               # Tailwind v4 + CPS theme tokens
 │   ├── dashboard/
-│   │   └── page.tsx              # Dashboard placeholder
+│   │   ├── layout.tsx            # Dashboard shell layout (sidebar + topbar)
+│   │   ├── page.tsx              # Dashboard overview content
+│   │   └── _components/
+│   │       ├── dashboard-shell.tsx # Shared dashboard sidebar/topbar
+│   │       └── dashboard-icons.tsx # Inline SVG icon set for dashboard UI
 │   ├── login/
 │   │   ├── actions.ts            # Server Action สำหรับ external login API
 │   │   └── _components/
@@ -63,7 +67,10 @@ d:\Project-2026\Project-CCI\cps/
 | Login Form | `app/login/_components/login-form.tsx` | Client Component ฟอร์มเข้าสู่ระบบ | `login` Server Action |
 | Login Action | `app/login/actions.ts` | Server Action เรียก external login API | `API_LOGIN_ENDPOINT` |
 | Factory Illustration | `app/login/_components/factory-illustration.tsx` | ภาพประกอบฝั่งซ้ายของหน้า Login | - |
-| Dashboard Page | `app/dashboard/page.tsx` | หน้าหลักหลัง login สำเร็จ | - |
+| Dashboard Layout | `app/dashboard/layout.tsx` | Shared layout สำหรับทุกหน้าใต้ `/dashboard` แยก sidebar/topbar ออกจาก page content | `DashboardShell` |
+| Dashboard Shell | `app/dashboard/_components/dashboard-shell.tsx` | Sidebar menu, topbar, search, notification, admin profile | `next/image`, `next/link`, dashboard icons |
+| Dashboard Icons | `app/dashboard/_components/dashboard-icons.tsx` | Inline SVG icons สำหรับ dashboard โดยไม่เพิ่ม dependency | - |
+| Dashboard Page | `app/dashboard/page.tsx` | Dashboard overview ตาม reference image: KPI cards, donut chart, line chart, orders table, delivery status | Dashboard icons |
 | Modal | `app/components/ui/modal.tsx` | Reusable dialog component สำหรับ Success / Error / Warning | - |
 | Modals Preview | `app/modals/page.tsx` | หน้าทดสอบโชว์ modal ทั้ง 3 แบบ | `Modal` |
 | Global Styles | `app/globals.css` | Tailwind v4 import + CPS theme tokens | `tailwindcss` |
@@ -249,6 +256,92 @@ pnpm dev
 - **Backdrop:** สไตล์ผ่าน `dialog::backdrop` ใน `app/globals.css`
 - **Preview:** `app/modals/page.tsx`
 
+### 5.1.3 Pagination Component
+
+- **File:** `app/components/ui/pagination.tsx`
+- **Description:** Reusable pagination controls and state hook สำหรับ table หรือ list ใดก็ได้; รองรับทั้ง client-side และ server-side pagination
+- **Exports:**
+  - `Pagination` — UI controls รองรับ prev/next, page numbers, ellipsis, page-size dropdown, jump-to-page, status text, loading/disabled state
+  - `usePagination<T>(items, defaultPageSize)` — hook จัดการ state `page`, `pageSize`, คำนวณ `paginatedItems` (client-side mode)
+- **Props:**
+  - `page`, `pageSize`, `total`
+  - `onPageChange(page: number)`
+  - `onPageSizeChange?(pageSize: number)`
+  - `pageSizeOptions?: number[]` (default `[5, 10, 20, 50]`)
+  - `showJumpToPage?: boolean` — แสดง input กระโดดไปหน้าที่ต้องการ
+  - `disabled?: boolean` — ปิดการใช้งาน controls ทั้งหมด
+  - `isLoading?: boolean` — แสดง spinner แทน status text และ disabled ปุ่ม
+- **Client-side usage:**
+  ```tsx
+  const { page, setPage, pageSize, setPageSize, paginatedItems } = usePagination(items, 10);
+  // ...
+  <Pagination
+    page={page}
+    pageSize={pageSize}
+    total={items.length}
+    onPageChange={setPage}
+    onPageSizeChange={setPageSize}
+    showJumpToPage
+  />
+  ```
+- **Server-side usage:**
+  - ใช้ `Pagination` โดยตรง โดยให้ parent จัดการ state และ fetch ข้อมูลจาก server
+  - ตัวอย่าง server action:
+    ```tsx
+    async function fetchOrders(page: number, pageSize: number) {
+      "use server";
+      const skip = (page - 1) * pageSize;
+      const [items, total] = await Promise.all([
+        db.order.findMany({ skip, take: pageSize }),
+        db.order.count(),
+      ]);
+      return { items, total };
+    }
+    ```
+  - ตัวอย่าง client:
+    ```tsx
+    "use client";
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [isLoading, setIsLoading] = useState(false);
+    const [data, setData] = useState<{ items: Order[]; total: number }>({ items: [], total: 0 });
+
+    useEffect(() => {
+      setIsLoading(true);
+      fetchOrders(page, pageSize).then((res) => {
+        setData(res);
+        setIsLoading(false);
+      });
+    }, [page, pageSize]);
+
+    <Pagination
+      page={page}
+      pageSize={pageSize}
+      total={data.total}
+      onPageChange={setPage}
+      onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+      isLoading={isLoading}
+      showJumpToPage
+    />
+    ```
+- **Responsive:** layout เปลี่ยนเป็น column บน mobile, row บน desktop; page-size selector และ jump-to-page ย่อได้
+
+### 5.1.4 Dashboard Design Notes
+
+- **Route:** `/dashboard`
+- **Layout split:** Menu/topbar อยู่ใน `app/dashboard/layout.tsx` ผ่าน `DashboardShell`; `app/dashboard/page.tsx` เก็บเฉพาะ dashboard overview content เพื่อให้เพิ่มหน้า child route เช่น materials, delivery, master data ได้โดยไม่ duplicate menu
+- **Reference style:** Light operations dashboard ตามภาพตัวอย่าง, sidebar fixed กว้าง 236px บน desktop, topbar สูง 92px, background `#f6f8fc`, white cards, thin borders, subtle shadows, blue active menu
+- **Content blocks:** KPI cards 5 ใบ, production status donut chart, materials stock line chart, recent production orders table, delivery status list
+- **Data state:** ตอนนี้ใช้ static mock data ใน `app/dashboard/page.tsx`; ต้องเปลี่ยนเป็น data fetching/API เมื่อ backend contract พร้อม
+- **Icons:** ใช้ inline SVG ใน `app/dashboard/_components/dashboard-icons.tsx` เพื่อเลี่ยงการเพิ่ม dependency ใหม่โดยไม่จำเป็น
+- **Responsive behavior:**
+  - Desktop: แสดง sidebar fixed กว้าง 236px
+  - Mobile/tablet: ซ่อน sidebar, เปิด/ปิด sidebar ผ่าน slide-out drawer ที่กดจาก hamburger menu บน topbar
+  - KPI cards: 1 column บน mobile, 2 columns บน tablet, 5 columns บน desktop
+  - Production status + materials stock, orders + delivery: 1 column บน mobile/tablet, 2 columns บน desktop (`xl`)
+  - Orders table: ใช้ `overflow-x-auto` เพื่อเลื่อนดูตารางบนหน้าจอเล็ก
+  - Line chart: ปรับความสูงตาม breakpoint (`210px` → `250px` → `270px`)
+
 ### 5.2 Build Workflow
 
 ```bash
@@ -334,6 +427,9 @@ const nextConfig: NextConfig = {
 
 | Date | Change | By |
 |------|--------|-----|
+| 2026-07-08 | Enhanced Pagination component with jump-to-page input, loading state, disabled state, and server-side pagination support | AI Assistant |
+| 2026-07-08 | Made dashboard responsive with mobile slide-out menu, horizontal table scroll, and breakpoint-aware layout | AI Assistant |
+| 2026-07-08 | Implemented dashboard reference UI with separated dashboard layout/sidebar, topbar, KPI cards, charts, orders table, and delivery status panels | AI Assistant |
 | 2026-07-08 | Updated Modal component with fixed sizes m/l/xl and scalable icon/text/button styles | AI Assistant |
 | 2026-07-08 | Added demo login bypass (admin.global / Passw0rd!) with Success/Error modal alerts and redirect to dashboard | AI Assistant |
 | 2026-07-08 | Created reusable Modal component with Success, Error, and Warning variants plus preview page | AI Assistant |
