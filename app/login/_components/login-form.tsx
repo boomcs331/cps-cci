@@ -3,7 +3,8 @@
 import { useState, useTransition, type FormEvent } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { login, type LoginResult } from "../actions";
+import { login } from "../actions";
+import type { LoginResult } from "../../types/auth";
 import { Modal } from "../../components/ui/modal";
 
 export function LoginForm() {

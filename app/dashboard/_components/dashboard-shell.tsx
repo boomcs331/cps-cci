@@ -16,16 +16,15 @@ import {
   TruckIcon,
   UsersIcon,
 } from "./dashboard-icons";
+import type { IconName, NavItem } from "../../config/navigation";
 
-const navItems = [
-  { label: "User Management", href: "/dashboard/users", icon: UsersIcon },
-  { label: "Materials", href: "/dashboard/materials", icon: BoxIcon },
-  { label: "Productions", href: "/dashboard", icon: FactoryIcon, active: true },
-  { label: "Delivery", href: "/dashboard/delivery", icon: TruckIcon },
-  { label: "Master Data", href: "/dashboard/master-data", icon: ClipboardIcon, expandable: true },
-];
-
-export function DashboardShell({ children }: { children: React.ReactNode }) {
+export function DashboardShell({
+  children,
+  navItems,
+}: {
+  children: React.ReactNode;
+  navItems: NavItem[];
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -44,7 +43,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             Production Management System
           </p>
         </div>
-        <SidebarContent onNavigate={() => setMenuOpen(false)} />
+        <SidebarContent navItems={navItems} onNavigate={() => setMenuOpen(false)} />
       </aside>
 
       {menuOpen && (
@@ -77,7 +76,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <CloseIcon className="h-6 w-6" />
           </button>
         </div>
-        <SidebarContent onNavigate={() => setMenuOpen(false)} />
+        <SidebarContent navItems={navItems} onNavigate={() => setMenuOpen(false)} />
       </aside>
 
       <div className="lg:pl-[236px]">
@@ -132,12 +131,26 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+const iconMap: Record<IconName, React.ComponentType<{ className?: string }>> = {
+  users: UsersIcon,
+  box: BoxIcon,
+  factory: FactoryIcon,
+  truck: TruckIcon,
+  clipboard: ClipboardIcon,
+};
+
+function SidebarContent({
+  navItems,
+  onNavigate,
+}: {
+  navItems: NavItem[];
+  onNavigate?: () => void;
+}) {
   return (
     <>
       <nav className="flex-1 space-y-2 px-4 pt-5">
         {navItems.map((item) => {
-          const Icon = item.icon;
+          const Icon = iconMap[item.icon];
           return (
             <Link
               key={item.label}

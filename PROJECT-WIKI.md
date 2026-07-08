@@ -65,12 +65,18 @@ d:\Project-2026\Project-CCI\cps/
 | Root Layout | `app/layout.tsx` | กำหนด font, metadata, html/body structure | `next/font/google`, `globals.css` |
 | Login Page | `app/page.tsx` | หน้าเข้าสู่ระบบ `/` | `next/image`, `LoginForm`, `FactoryIllustration` |
 | Login Form | `app/login/_components/login-form.tsx` | Client Component ฟอร์มเข้าสู่ระบบ | `login` Server Action |
-| Login Action | `app/login/actions.ts` | Server Action เรียก external login API | `API_LOGIN_ENDPOINT` |
+| Login Action | `app/login/actions.ts` | Server Action thin adapter สำหรับ login | `app/lib/auth.ts` |
+| Auth Data Access | `app/lib/auth.ts` | ตรวจสอบ demo credentials หรือส่งต่อ external login API | `API_LOGIN_ENDPOINT`, `app/types/auth.ts` |
+| Auth Types | `app/types/auth.ts` | Type definitions สำหรับ login credentials/result | - |
 | Factory Illustration | `app/login/_components/factory-illustration.tsx` | ภาพประกอบฝั่งซ้ายของหน้า Login | - |
 | Dashboard Layout | `app/dashboard/layout.tsx` | Shared layout สำหรับทุกหน้าใต้ `/dashboard` แยก sidebar/topbar ออกจาก page content | `DashboardShell` |
-| Dashboard Shell | `app/dashboard/_components/dashboard-shell.tsx` | Sidebar menu, topbar, search, notification, admin profile | `next/image`, `next/link`, dashboard icons |
+| Dashboard Shell | `app/dashboard/_components/dashboard-shell.tsx` | Sidebar menu, topbar, search, notification, admin profile | `next/image`, `next/link`, dashboard icons, `app/config/navigation` |
 | Dashboard Icons | `app/dashboard/_components/dashboard-icons.tsx` | Inline SVG icons สำหรับ dashboard โดยไม่เพิ่ม dependency | - |
-| Dashboard Page | `app/dashboard/page.tsx` | Dashboard overview ตาม reference image: KPI cards, donut chart, line chart, orders table, delivery status | Dashboard icons |
+| Navigation Config | `app/config/navigation.ts` | กำหนดรายการเมนู sidebar สำหรับ dashboard | dashboard icons |
+| Dashboard Page | `app/dashboard/page.tsx` | Async server component ที่ compose dashboard panels | `app/lib/dashboard.ts`, dashboard panel components |
+| Dashboard Data Access | `app/lib/dashboard.ts` | คืนข้อมูล dashboard overview (mock ก่อนเชื่อม API) | `app/dashboard/_data/mock-data.ts`, `app/types/dashboard.ts` |
+| Dashboard Types | `app/types/dashboard.ts` | Type definitions สำหรับ dashboard domain | - |
+| Dashboard Mock Data | `app/dashboard/_data/mock-data.ts` | Static mock data สำหรับ dashboard | `app/types/dashboard.ts`, dashboard icons |
 | Modal | `app/components/ui/modal.tsx` | Reusable dialog component สำหรับ Success / Error / Warning | - |
 | Modals Preview | `app/modals/page.tsx` | หน้าทดสอบโชว์ modal ทั้ง 3 แบบ | `Modal` |
 | Global Styles | `app/globals.css` | Tailwind v4 import + CPS theme tokens | `tailwindcss` |
@@ -88,8 +94,9 @@ app/layout.tsx
         └── Right panel
             └── uses → LoginForm (Client Component)
                 └── on submit → app/login/actions.ts (Server Action)
-                    └── POST → API_LOGIN_ENDPOINT (external API)
-                        └── on success → redirect("/dashboard")
+                    └── delegates to → app/lib/auth.ts (data-access layer)
+                        └── POST → API_LOGIN_ENDPOINT (external API)
+                            └── on success → redirect("/dashboard")
 ```
 
 > **Note:** ยังไม่มี database, state management, หรือ internal API routes อื่น ๆ การจัดการ token ยังเป็น placeholder รอ confirm API contract
@@ -102,7 +109,7 @@ app/layout.tsx
 
 | Service | Endpoint / URL | Usage | Where Used |
 |---------|---------------|-------|------------|
-| External Login API | `API_LOGIN_ENDPOINT` (env var) | ตรวจสอบชื่อผู้ใช้/รหัสผ่าน และคืน token | `app/login/actions.ts` |
+| External Login API | `API_LOGIN_ENDPOINT` (env var) | ตรวจสอบชื่อผู้ใช้/รหัสผ่าน และคืน token | `app/lib/auth.ts` |
 
 > **Note:** ค่า `API_LOGIN_ENDPOINT` ต้องกำหนดใน `.env` หรือ `.env.local` ก่อนใช้งาน ตัวอย่างอยู่ใน `.env.example`
 
@@ -110,7 +117,9 @@ app/layout.tsx
 
 | API | Path | Method | Responsibility |
 |-----|------|--------|----------------|
-| Login Server Action | `app/login/actions.ts` | `POST` (เรียก external) | รับข้อมูลจากฟอร์ม ตรวจสอบ demo credentials หรือส่งต่อ external API และคืนผลลัพธ์ให้ client |
+| Login Server Action | `app/login/actions.ts` | `POST` (เรียก external) | Thin adapter: รับข้อมูลจากฟอร์ม แล้ว delegate ไปยัง `app/lib/auth.ts` |
+| Auth Data Access | `app/lib/auth.ts` | `POST` (เรียก external) | ตรวจสอบ demo credentials หรือส่งต่อ external API จัดการ redirect และคืนผลลัพธ์ |
+| Dashboard Data Access | `app/lib/dashboard.ts` | อ่านข้อมูล (async) | คืนข้อมูล dashboard overview; ปัจจุบันใช้ mock data จาก `app/dashboard/_data/mock-data.ts` |
 
 > **Demo Credentials:** สำหรับทดสอบ ใช้ `admin.global` / `Passw0rd!` เพื่อ bypass external API และ return success ทันที
 
@@ -329,10 +338,20 @@ pnpm dev
 ### 5.1.4 Dashboard Design Notes
 
 - **Route:** `/dashboard`
-- **Layout split:** Menu/topbar อยู่ใน `app/dashboard/layout.tsx` ผ่าน `DashboardShell`; `app/dashboard/page.tsx` เก็บเฉพาะ dashboard overview content เพื่อให้เพิ่มหน้า child route เช่น materials, delivery, master data ได้โดยไม่ duplicate menu
+- **Layout split:** Menu/topbar อยู่ใน `app/dashboard/layout.tsx` ผ่าน `DashboardShell`; `app/dashboard/page.tsx` เป็นแค่ composition layer ที่เรียง panel components
+- **Architecture:**
+  - `app/dashboard/page.tsx` — thin composition layer (server component)
+  - `app/dashboard/_components/*` — panel components: `KpiGrid`, `ProductionStatusPanel`, `MaterialsStockPanel`, `OrdersPanel`, `DeliveryPanel`
+  - `app/dashboard/_data/mock-data.ts` — static mock data สำหรับ dashboard
+  - `app/dashboard/_components/dashboard-utils.ts` — shared helpers (tone classes, status/progress color mapping)
+  - `app/config/navigation.ts` — navigation config แยกจาก shell สำหรับ sidebar menu
+  - `app/types/dashboard.ts` — domain types: `KpiCard`, `Order`, `DeliveryStatus`, `ProductionStatus`, `LineChartPoint`
+  - `app/components/ui/panel.tsx` — reusable card panel wrapper
+  - `app/components/charts/donut-chart.tsx` — parameterized donut chart
+  - `app/components/charts/line-chart.tsx` — parameterized line chart
 - **Reference style:** Light operations dashboard ตามภาพตัวอย่าง, sidebar fixed กว้าง 236px บน desktop, topbar สูง 92px, background `#f6f8fc`, white cards, thin borders, subtle shadows, blue active menu
 - **Content blocks:** KPI cards 5 ใบ, production status donut chart, materials stock line chart, recent production orders table, delivery status list
-- **Data state:** ตอนนี้ใช้ static mock data ใน `app/dashboard/page.tsx`; ต้องเปลี่ยนเป็น data fetching/API เมื่อ backend contract พร้อม
+- **Data state:** ตอนนี้ใช้ static mock data ใน `app/dashboard/_data/mock-data.ts`; ต้องเปลี่ยนเป็น data fetching/API เมื่อ backend contract พร้อม โดยสามารถแทนที่ mock-data ด้วย server actions หรือ data layer โดยไม่กระทบ UI
 - **Icons:** ใช้ inline SVG ใน `app/dashboard/_components/dashboard-icons.tsx` เพื่อเลี่ยงการเพิ่ม dependency ใหม่โดยไม่จำเป็น
 - **Responsive behavior:**
   - Desktop: แสดง sidebar fixed กว้าง 236px
@@ -427,6 +446,9 @@ const nextConfig: NextConfig = {
 
 | Date | Change | By |
 |------|--------|-----|
+| 2026-07-08 | Decoupled dashboard navigation config from `DashboardShell` into `app/config/navigation.ts` | AI Assistant |
+| 2026-07-08 | Introduced data-access seams: `app/lib/auth.ts` and `app/lib/dashboard.ts`; moved types to `app/types/` | AI Assistant |
+| 2026-07-08 | Refactored dashboard into modular feature components with extracted Panel, charts, domain types, and mock data layer | AI Assistant |
 | 2026-07-08 | Enhanced Pagination component with jump-to-page input, loading state, disabled state, and server-side pagination support | AI Assistant |
 | 2026-07-08 | Made dashboard responsive with mobile slide-out menu, horizontal table scroll, and breakpoint-aware layout | AI Assistant |
 | 2026-07-08 | Implemented dashboard reference UI with separated dashboard layout/sidebar, topbar, KPI cards, charts, orders table, and delivery status panels | AI Assistant |
