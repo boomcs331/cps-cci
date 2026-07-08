@@ -33,26 +33,26 @@ export function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-[460px] rounded-[30px] bg-white px-8 py-10 shadow-[0_24px_58px_rgba(15,76,129,0.18)] sm:px-11 sm:py-12">
-      <div className="mb-10 flex flex-col items-center text-center">
+    <div className="w-full max-w-[400px] rounded-2xl bg-white px-7 py-8 shadow-[0_18px_48px_rgba(15,76,129,0.16)] sm:px-9 sm:py-10">
+      <div className="mb-6 flex flex-col items-center text-center">
         <Image
           src="/cps-logo.png"
           alt="CPS"
-          width={172}
-          height={69}
-          className="mb-8 h-auto w-36"
+          width={140}
+          height={56}
+          className="mb-5 h-auto w-28"
           priority
         />
-        <h1 className="text-4xl font-extrabold tracking-tight text-[#071642]">
+        <h1 className="text-3xl font-extrabold tracking-tight text-[#071642]">
           Welcome back
         </h1>
-        <p className="mt-3 text-base font-medium text-slate-500">
+        <p className="mt-2 text-sm font-medium text-slate-500">
           Sign in to continue to your dashboard
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-2">
           <label
             htmlFor="username"
             className="text-sm font-bold text-[#071642]"
@@ -60,8 +60,8 @@ export function LoginForm() {
             Email or Username
           </label>
           <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5 text-slate-400">
-              <UserIcon className="h-5 w-5" />
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+              <UserIcon className="h-[18px] w-[18px]" />
             </div>
             <input
               id="username"
@@ -71,12 +71,12 @@ export function LoginForm() {
               autoComplete="username"
               disabled={pending}
               placeholder="Enter your email or username"
-              className="h-16 w-full rounded-xl border border-slate-300 bg-white pl-14 pr-5 text-base font-medium text-[#071642] outline-none ring-primary/20 transition-all placeholder:text-slate-400 focus:border-primary focus:ring-4 disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-12 w-full rounded-lg border border-slate-300 bg-white pl-11 pr-4 text-sm font-medium text-[#071642] outline-none ring-primary/20 transition-all placeholder:text-slate-400 focus:border-primary focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           <label
             htmlFor="password"
             className="text-sm font-bold text-[#071642]"
@@ -84,8 +84,8 @@ export function LoginForm() {
             Password
           </label>
           <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5 text-slate-400">
-              <LockIcon className="h-5 w-5" />
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+              <LockIcon className="h-[18px] w-[18px]" />
             </div>
             <input
               id="password"
@@ -95,19 +95,19 @@ export function LoginForm() {
               autoComplete="current-password"
               disabled={pending}
               placeholder="Enter your password"
-              className="h-16 w-full rounded-xl border border-slate-300 bg-white pl-14 pr-14 text-base font-medium text-[#071642] outline-none ring-primary/20 transition-all placeholder:text-slate-400 focus:border-primary focus:ring-4 disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-12 w-full rounded-lg border border-slate-300 bg-white pl-11 pr-12 text-sm font-medium text-[#071642] outline-none ring-primary/20 transition-all placeholder:text-slate-400 focus:border-primary focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-60"
             />
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
               disabled={pending}
               aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute inset-y-0 right-0 flex items-center pr-5 text-slate-500 transition-colors hover:text-[#071642] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+              className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-500 transition-colors hover:text-[#071642] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
             >
               {showPassword ? (
-                <EyeOffIcon className="h-5 w-5" />
+                <EyeOffIcon className="h-[18px] w-[18px]" />
               ) : (
-                <EyeIcon className="h-5 w-5" />
+                <EyeIcon className="h-[18px] w-[18px]" />
               )}
             </button>
           </div>
@@ -116,7 +116,7 @@ export function LoginForm() {
         <div className="flex items-center justify-between gap-4">
           <label
             htmlFor="rememberMe"
-            className="flex cursor-pointer items-center gap-3 text-sm font-semibold text-[#071642]"
+            className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#071642]"
           >
             <input
               id="rememberMe"
@@ -124,13 +124,13 @@ export function LoginForm() {
               type="checkbox"
               value="true"
               disabled={pending}
-              className="h-5 w-5 rounded border-slate-300 text-primary ring-primary/20 focus:ring-4 disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-4 w-4 rounded border-slate-300 text-primary ring-primary/20 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-60"
             />
             Remember me
           </label>
           <a
             href="mailto:support@cps.example.com?subject=Password%20reset"
-            className="text-sm font-semibold text-[#1555e8] transition-colors hover:text-primary-hover hover:underline"
+            className="text-xs font-semibold text-[#1555e8] transition-colors hover:text-primary-hover hover:underline"
           >
             Forgot password?
           </a>
@@ -138,7 +138,7 @@ export function LoginForm() {
 
         {result?.error && (
           <div
-            className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
+            className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600"
             role="alert"
           >
             {result.error}
@@ -148,11 +148,11 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={pending}
-          className="flex h-16 w-full items-center justify-center rounded-xl bg-[#1555e8] px-6 text-lg font-bold text-white shadow-[0_12px_26px_rgba(21,85,232,0.22)] transition-all hover:bg-primary-hover hover:shadow-[0_16px_34px_rgba(21,85,232,0.28)] focus-visible:ring-4 focus-visible:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-70"
+          className="flex h-12 w-full items-center justify-center rounded-lg bg-[#1555e8] px-5 text-base font-bold text-white shadow-[0_10px_22px_rgba(21,85,232,0.2)] transition-all hover:bg-primary-hover hover:shadow-[0_14px_30px_rgba(21,85,232,0.26)] focus-visible:ring-[3px] focus-visible:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {pending ? (
             <span className="flex items-center gap-2">
-              <SpinnerIcon className="h-5 w-5 animate-spin" />
+              <SpinnerIcon className="h-4 w-4 animate-spin" />
               Signing in...
             </span>
           ) : (
@@ -161,9 +161,9 @@ export function LoginForm() {
         </button>
       </form>
 
-      <div className="my-8 flex items-center gap-5">
+      <div className="my-6 flex items-center gap-4">
         <div className="h-px flex-1 bg-slate-200" />
-        <span className="text-sm font-medium text-slate-500">
+        <span className="text-xs font-medium text-slate-500">
           or continue with
         </span>
         <div className="h-px flex-1 bg-slate-200" />
@@ -171,13 +171,13 @@ export function LoginForm() {
 
       <button
         type="button"
-        className="flex h-16 w-full items-center justify-center gap-4 rounded-xl border border-slate-300 bg-white px-6 text-base font-bold text-[#071642] transition-all hover:border-primary/40 hover:shadow-sm focus-visible:ring-4 focus-visible:ring-primary/20"
+        className="flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white px-5 text-sm font-bold text-[#071642] transition-all hover:border-primary/40 hover:shadow-sm focus-visible:ring-[3px] focus-visible:ring-primary/20"
       >
-        <GoogleIcon className="h-6 w-6" />
+        <GoogleIcon className="h-5 w-5" />
         Sign in with Google
       </button>
 
-      <p className="mt-10 text-center text-sm font-medium text-slate-500">
+      <p className="mt-7 text-center text-xs font-medium text-slate-500">
         Need help?{" "}
         <a
           href="mailto:support@cps.example.com"
