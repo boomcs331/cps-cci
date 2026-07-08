@@ -15,7 +15,7 @@
 - **Font:** Geist + Geist Mono (via `next/font/google`)
 - **Language:** TypeScript
 - **Package Manager:** pnpm
-- **Status:** ยังเป็น project template เริ่มต้น มีเพียงหน้า `/` (Home)
+- **Status:** มีหน้า Login ที่ `/` และหน้า Dashboard placeholder ที่ `/dashboard` รอเชื่อมต่อ external login API
 
 ---
 
@@ -27,16 +27,28 @@
 d:\Project-2026\Project-CCI\cps/
 ├── app/                          # Next.js App Router
 │   ├── layout.tsx                # Root layout (font, metadata, html/body)
-│   ├── page.tsx                  # Home page ("/")
-│   ├── globals.css               # Tailwind v4 + CSS variables
+│   ├── page.tsx                  # Login page ("/")
+│   ├── globals.css               # Tailwind v4 + CPS theme tokens
+│   ├── dashboard/
+│   │   └── page.tsx              # Dashboard placeholder
+│   ├── login/
+│   │   ├── actions.ts            # Server Action สำหรับ external login API
+│   │   └── _components/
+│   │       ├── login-form.tsx    # Client Component form
+│   │       └── production-line.tsx # Decorative left-panel illustration
 │   └── favicon.ico               # Favicon
 ├── public/                       # Static assets
+│   └── cps-logo.png              # Logo หลักของระบบ
+├── .env                          # Local environment variables
+├── .env.example                  # Environment variable template
 ├── next.config.ts                # Next.js config (currently empty)
 ├── package.json                  # Dependencies & scripts
 ├── pnpm-workspace.yaml           # pnpm workspace + onlyBuiltDependencies
 ├── postcss.config.mjs            # Tailwind PostCSS plugin
 ├── tsconfig.json                 # TypeScript config
 ├── eslint.config.mjs             # ESLint config
+├── docs/
+│   └── AI-CONTEXT-LOOP-PROMPT.md # Prompt template สำหรับ AI
 ├── README.md                     # create-next-app default README
 ├── AGENTS.md                     # Next.js agent rules (READ BEFORE CODE)
 └── PROJECT-WIKI.md               # This file
@@ -47,8 +59,12 @@ d:\Project-2026\Project-CCI\cps/
 | Module | Path | Responsibility | Depends On |
 |--------|------|----------------|------------|
 | Root Layout | `app/layout.tsx` | กำหนด font, metadata, html/body structure | `next/font/google`, `globals.css` |
-| Home Page | `app/page.tsx` | แสดงหน้า landing page `/` | `next/image` |
-| Global Styles | `app/globals.css` | Tailwind v4 import, theme variables, dark mode | `tailwindcss` |
+| Login Page | `app/page.tsx` | หน้าเข้าสู่ระบบ `/` | `next/image`, `LoginForm`, `ProductionLine` |
+| Login Form | `app/login/_components/login-form.tsx` | Client Component ฟอร์มเข้าสู่ระบบ | `login` Server Action |
+| Login Action | `app/login/actions.ts` | Server Action เรียก external login API | `API_LOGIN_ENDPOINT` |
+| Production Line | `app/login/_components/production-line.tsx` | ภาพประกอบฝั่งซ้ายของหน้า Login | - |
+| Dashboard Page | `app/dashboard/page.tsx` | หน้าหลักหลัง login สำเร็จ | - |
+| Global Styles | `app/globals.css` | Tailwind v4 import + CPS theme tokens | `tailwindcss` |
 | Next.js Config | `next.config.ts` | ตั้งค่า Next.js | - |
 | pnpm Workspace | `pnpm-workspace.yaml` | อนุญาต native builds (sharp, unrs-resolver) | - |
 
@@ -57,12 +73,17 @@ d:\Project-2026\Project-CCI\cps/
 ```
 app/layout.tsx
     └── wraps → app/page.tsx
-        └── uses → next/image
-        └── uses → /next.svg, /vercel.svg
-        └── styled by → globals.css (Tailwind v4)
+        ├── Left panel
+        │   └── uses → FactoryIllustration (decorative SVG)
+        │   └── uses → /cps-logo.png
+        └── Right panel
+            └── uses → LoginForm (Client Component)
+                └── on submit → app/login/actions.ts (Server Action)
+                    └── POST → API_LOGIN_ENDPOINT (external API)
+                        └── on success → redirect("/dashboard")
 ```
 
-> **Note:** ปัจจุบันยังไม่มี API routes, Server Actions, database, state management, หรือ module ภายนอก
+> **Note:** ยังไม่มี database, state management, หรือ internal API routes อื่น ๆ การจัดการ token ยังเป็น placeholder รอ confirm API contract
 
 ---
 
@@ -72,21 +93,62 @@ app/layout.tsx
 
 | Service | Endpoint / URL | Usage | Where Used |
 |---------|---------------|-------|------------|
-| Next.js Templates | `https://vercel.com/templates?framework=next.js` | Link in Home page | `app/page.tsx` |
-| Next.js Learn | `https://nextjs.org/learn` | Link in Home page | `app/page.tsx` |
-| Vercel Deploy | `https://vercel.com/new` | Link in Home page | `app/page.tsx` |
-| Next.js Docs | `https://nextjs.org/docs` | Link in Home page | `app/page.tsx` |
+| External Login API | `API_LOGIN_ENDPOINT` (env var) | ตรวจสอบชื่อผู้ใช้/รหัสผ่าน และคืน token | `app/login/actions.ts` |
+
+> **Note:** ค่า `API_LOGIN_ENDPOINT` ต้องกำหนดใน `.env` หรือ `.env.local` ก่อนใช้งาน ตัวอย่างอยู่ใน `.env.example`
 
 ### 3.2 Internal APIs (Next.js App Router)
 
-ยังไม่มี API Routes หรือ Server Actions ใด ๆ
+| API | Path | Method | Responsibility |
+|-----|------|--------|----------------|
+| Login Server Action | `app/login/actions.ts` | `POST` (เรียก external) | รับข้อมูลจากฟอร์ม ส่งต่อไปยัง external API และ redirect เมื่อสำเร็จ |
 
-### 3.3 API Naming & Validation Rules
+### 3.3 Login API Contract (Placeholder)
 
-- API Route ใหม่ต้องสร้างใน `app/api/...`
+**Request:**
+```json
+POST {API_LOGIN_ENDPOINT}
+Content-Type: application/json
+
+{
+  "username": "string",
+  "password": "string",
+  "rememberMe": true
+}
+```
+
+**Expected Success Response:**
+```json
+{
+  "accessToken": "string",
+  "refreshToken": "string?",
+  "expiresIn": 10800,
+  "user": {
+    "id": "string",
+    "name": "string",
+    "email": "string"
+  }
+}
+```
+
+**Expected Error Response:**
+```json
+{
+  "message": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
+  "error": "string?"
+}
+```
+
+> **TODO:** ปรับ contract นี้ให้ตรงกับ external API จริงเมื่อทราบรายละเอียด
+
+### 3.4 API Naming & Validation Rules
+
+- Internal API Route ใหม่ต้องสร้างใน `app/api/...`
+- Server Action สำหรับ auth ควรอยู่ใน `app/login/actions.ts`
 - ใช้ HTTP method ตาม REST convention (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`)
 - ต้อง validate input ทุก request ด้วย Zod หรือ library ที่เหมาะสม
 - ต้อง handle error อย่างน้อย `400`, `401`, `500`
+- ห้าม expose ค่า `API_LOGIN_ENDPOINT` ไปยัง client-side code (ใช้ Server Action)
 
 ---
 
@@ -114,8 +176,18 @@ app/layout.tsx
 
 ### 4.3 Validation Rules (Business / Data)
 
-- ยังไม่มี business rules ที่ต้อง validate
-- หากมี form ให้เพิ่ม validation schema ในไฟล์นี้
+#### Login Form Validation
+
+- ชื่อผู้ใช้/อีเมล และรหัสผ่าน ห้ามเป็นค่าว่าง (client-side + server-side)
+- ชื่อผู้ใช้/อีเมล จะ trim whitespace ก่อนส่ง
+- `rememberMe` เป็นค่า boolean (ส่งผลต่อ session duration 3 ชั่วโมง ฝั่ง backend)
+- รหัสผ่าร ยังไม่มี constraint เพิ่มเติม รอ confirm จาก external API
+
+#### API Validation
+
+- Server Action ต้องตรวจสอบว่า `API_LOGIN_ENDPOINT` ถูกตั้งค่าก่อนเรียก
+- Response ที่ไม่ใช่ 2xx ต้อง parse error message อย่างปลอดภัย
+- ต้อง handle network error ด้วยข้อความที่เข้าใจง่าย
 
 ---
 
@@ -127,11 +199,24 @@ app/layout.tsx
 # 1. Install dependencies
 pnpm install
 
-# 2. Run development server
+# 2. Configure environment
+cp .env.example .env
+# แล้วแก้ไข API_LOGIN_ENDPOINT ให้ตรงกับ external API
+
+# 3. Run development server
 pnpm dev
 
-# 3. Open http://localhost:3000
+# 4. Open http://localhost:3000
 ```
+
+### 5.1.1 Login Page Design Notes
+
+- **Layout:** การ์ด login แบบ split-screen บน desktop (`lg:` breakpoint), แสดงแค่ฝั่งขวาบน mobile/tablet
+- **Color palette:** โทนฟ้าอ่อน (light blue gradient) + ขาว + น้ำเงิน `#0F4C81` สำหรับ accent
+- **Typography:** Geist Sans สำหรับ body/heading
+- **Signature element:** ภาพประกอบโรงงาน/อุตสาหกรรมในฝั่งซ้าย (factory skyline, robotic arm, smokestacks)
+- **Card style:** การ์ดสีขาว มุมมน มีเงา โลโก้อยู่กึ่งกลางด้านบน
+- **Accessibility:** visible labels, focus rings, password visibility toggle, error alerts with `role="alert"`
 
 ### 5.2 Build Workflow
 
@@ -181,6 +266,13 @@ pnpm lint
 
 | Date | Change | By |
 |------|--------|-----|
+| 2026-07-08 | Redesigned login page to match reference image: light theme, centered card, factory illustration, and reference-style form | AI Assistant |
+| 2026-07-08 | Updated all login page logo references to use `/cps-logo.png` | AI Assistant |
+| 2026-07-08 | Implemented Login Page (`/`) with split-screen layout, animated production line illustration, and responsive design | AI Assistant |
+| 2026-07-08 | Added Server Action `app/login/actions.ts` with placeholder external login API integration | AI Assistant |
+| 2026-07-08 | Created dashboard placeholder at `/dashboard` | AI Assistant |
+| 2026-07-08 | Added `.env` and `.env.example` for `API_LOGIN_ENDPOINT` configuration | AI Assistant |
+| 2026-07-08 | Updated CPS theme tokens in `app/globals.css` | AI Assistant |
 | 2026-07-08 | Removed ignored `pnpm.onlyBuiltDependencies` from `package.json`; build allowlist remains in `pnpm-workspace.yaml`, and local `.pnpm-store/` is ignored | AI Assistant |
 | 2026-07-08 | Added AI Context Loop Prompt template for project-aware AI implementation | AI Assistant |
 | 2026-07-08 | Created PROJECT-WIKI.md | AI Assistant |
@@ -190,8 +282,11 @@ pnpm lint
 
 ## 8. Open Questions / TODO
 
-- [ ] กำหนด business domain ของโปรเจกต์ให้ชัดเจน
-- [ ] ออกแบบ data model / API contract
+- [x] กำหนด business domain ของโปรเจกต์ให้ชัดเจน (Production Management System)
+- [ ] ยืนยัน external login API endpoint และปรับ contract ใน `app/login/actions.ts`
+- [ ] ตัดสินใจวิธีจัดเก็บ token (HttpOnly cookie / sessionStorage / localStorage)
+- [ ] เพิ่ม route protection สำหรับ `/dashboard`
+- [ ] ออกแบบ data model / API contract สำหรับส่วนอื่น ๆ ของระบบ
 - [ ] เลือก state management หากจำเป็น (React Context, Zustand, Jotai, etc.)
 - [ ] เลือก database / backend service หากจำเป็น
 - [ ] กำหนด testing strategy (unit, integration, e2e)

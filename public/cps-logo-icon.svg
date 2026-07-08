@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cpsBlue" x1="60" y1="60" x2="460" y2="460" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B63F6"/>
+      <stop offset="55%" stop-color="#0646B8"/>
+      <stop offset="100%" stop-color="#052C7D"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#cpsBlue)">
+    <path d="M104 116 H414 L382 184 H163 L115 286 H292 L260 356 H82 C52 356 34 327 48 298 L126 139 C135 124 86 116 104 116Z"/>
+    <path d="M274 116 H414 C462 116 488 153 470 193 L452 232 C439 261 413 276 379 276 H274 L236 356 H156 L236 184 H244 L274 116Z"/>
+  </g>
+</svg>
