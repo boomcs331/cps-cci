@@ -24,20 +24,30 @@ export interface LoginResult {
   error?: string;
 }
 
+const DEMO_USERNAME = "admin.global";
+const DEMO_PASSWORD = "Passw0rd!";
+
 /**
- * Server Action for external login API.
+ * Server Action for login.
  *
- * Configure the external endpoint via the `API_LOGIN_ENDPOINT` environment variable.
- * The response contract is intentionally generic; adjust after the real API spec is known.
+ * For demo purposes, hardcoded credentials (admin.global / Passw0rd!) bypass the
+ * external API and return success immediately. In production this bypass must be
+ * removed and the real `API_LOGIN_ENDPOINT` must be configured.
  */
 export async function login(credentials: LoginCredentials): Promise<LoginResult> {
+  if (
+    credentials.username === DEMO_USERNAME &&
+    credentials.password === DEMO_PASSWORD
+  ) {
+    return { success: true };
+  }
+
   const endpoint = process.env.API_LOGIN_ENDPOINT;
 
   if (!endpoint) {
     return {
       success: false,
-      error:
-        "ระบบยังไม่ได้กำหนด endpoint สำหรับเข้าสู่ระบบ กรุณาติดต่อผู้ดูแลระบบ",
+      error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
     };
   }
 

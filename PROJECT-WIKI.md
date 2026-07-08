@@ -59,11 +59,13 @@ d:\Project-2026\Project-CCI\cps/
 | Module | Path | Responsibility | Depends On |
 |--------|------|----------------|------------|
 | Root Layout | `app/layout.tsx` | กำหนด font, metadata, html/body structure | `next/font/google`, `globals.css` |
-| Login Page | `app/page.tsx` | หน้าเข้าสู่ระบบ `/` | `next/image`, `LoginForm`, `ProductionLine` |
+| Login Page | `app/page.tsx` | หน้าเข้าสู่ระบบ `/` | `next/image`, `LoginForm`, `FactoryIllustration` |
 | Login Form | `app/login/_components/login-form.tsx` | Client Component ฟอร์มเข้าสู่ระบบ | `login` Server Action |
 | Login Action | `app/login/actions.ts` | Server Action เรียก external login API | `API_LOGIN_ENDPOINT` |
-| Production Line | `app/login/_components/production-line.tsx` | ภาพประกอบฝั่งซ้ายของหน้า Login | - |
+| Factory Illustration | `app/login/_components/factory-illustration.tsx` | ภาพประกอบฝั่งซ้ายของหน้า Login | - |
 | Dashboard Page | `app/dashboard/page.tsx` | หน้าหลักหลัง login สำเร็จ | - |
+| Modal | `app/components/ui/modal.tsx` | Reusable dialog component สำหรับ Success / Error / Warning | - |
+| Modals Preview | `app/modals/page.tsx` | หน้าทดสอบโชว์ modal ทั้ง 3 แบบ | `Modal` |
 | Global Styles | `app/globals.css` | Tailwind v4 import + CPS theme tokens | `tailwindcss` |
 | Next.js Config | `next.config.ts` | ตั้งค่า Next.js | - |
 | pnpm Workspace | `pnpm-workspace.yaml` | อนุญาต native builds (sharp, unrs-resolver) | - |
@@ -101,9 +103,17 @@ app/layout.tsx
 
 | API | Path | Method | Responsibility |
 |-----|------|--------|----------------|
-| Login Server Action | `app/login/actions.ts` | `POST` (เรียก external) | รับข้อมูลจากฟอร์ม ส่งต่อไปยัง external API และ redirect เมื่อสำเร็จ |
+| Login Server Action | `app/login/actions.ts` | `POST` (เรียก external) | รับข้อมูลจากฟอร์ม ตรวจสอบ demo credentials หรือส่งต่อ external API และคืนผลลัพธ์ให้ client |
 
-### 3.3 Login API Contract (Placeholder)
+> **Demo Credentials:** สำหรับทดสอบ ใช้ `admin.global` / `Passw0rd!` เพื่อ bypass external API และ return success ทันที
+
+### 3.3 Client Feedback
+
+- `LoginForm` แสดงผลลัพธ์ผ่าน `Modal` component (`app/components/ui/modal.tsx`)
+- Login สำเร็จ: แสดง Success modal กด Continue เพื่อไป `/dashboard`
+- Login ไม่สำเร็จ: แสดง Error modal พร้อมปุ่ม Try Again / Cancel
+
+### 3.4 Login API Contract (Placeholder)
 
 **Request:**
 ```json
@@ -141,7 +151,7 @@ Content-Type: application/json
 
 > **TODO:** ปรับ contract นี้ให้ตรงกับ external API จริงเมื่อทราบรายละเอียด
 
-### 3.4 API Naming & Validation Rules
+### 3.5 API Naming & Validation Rules
 
 - Internal API Route ใหม่ต้องสร้างใน `app/api/...`
 - Server Action สำหรับ auth ควรอยู่ใน `app/login/actions.ts`
@@ -226,6 +236,18 @@ pnpm dev
 - **Motion loop:** The robot breathes subtly, packages drift along the production line, the truck slides slightly, the small robot moves in place, the factory skyline gently lifts, and smoke rises from the stacks.
 - **CSS hooks:** Motion tokens live in `app/globals.css` under Tailwind v4 `@theme inline`: `animate-reference-robot`, `animate-package-flow`, `animate-truck-drift`, `animate-stack-smoke`, `animate-factory-breathe`, and `animate-mini-robot`.
 - **Accessibility:** The illustration remains `aria-hidden="true"` and global `prefers-reduced-motion: reduce` disables long-running animation for users who request reduced motion.
+
+### 5.1.3 Modal Component Design
+
+- **Component:** `app/components/ui/modal.tsx`
+- **Variants:** `success`, `error`, `warning`
+- **Sizes:** `m` (420px), `l` (520px), `xl` (620px) — ความกว้าง fixed ทุกครั้ง
+- **Visual style:** การ์ดกลางจอสีขาว มุมมน `rounded-2xl` มีไอคอนวงกลมสีเขียว/แดง/ส้ม ตาม variant, ปุ่มปิดมุมขวาบน, ปุ่ม action ด้านล่าง
+- **Success:** ปุ่มเดียวสีน้ำเงิน (`Continue`)
+- **Error / Warning:** สองปุ่ม (`Cancel` outline + ปุ่ม primary สีน้ำเงิน)
+- **Implementation:** ใช้ native HTML `<dialog>` element + React `useRef` ควบคุม `showModal()` / `close()` แทน shadcn/ui เพราะโปรเจกต์ยังไม่ได้ติดตั้ง shadcn
+- **Backdrop:** สไตล์ผ่าน `dialog::backdrop` ใน `app/globals.css`
+- **Preview:** `app/modals/page.tsx`
 
 ### 5.2 Build Workflow
 
@@ -312,6 +334,10 @@ const nextConfig: NextConfig = {
 
 | Date | Change | By |
 |------|--------|-----|
+| 2026-07-08 | Updated Modal component with fixed sizes m/l/xl and scalable icon/text/button styles | AI Assistant |
+| 2026-07-08 | Added demo login bypass (admin.global / Passw0rd!) with Success/Error modal alerts and redirect to dashboard | AI Assistant |
+| 2026-07-08 | Created reusable Modal component with Success, Error, and Warning variants plus preview page | AI Assistant |
+| 2026-07-08 | Removed Google Sign In button and divider from login form | AI Assistant |
 | 2026-07-08 | Documented external sharing workflow using ngrok in PROJECT-WIKI.md | AI Assistant |
 | 2026-07-08 | Reworked login hero animation to match the provided reference image with soft factory silhouette, robotic arm, truck, packages, smokestacks, and layered blue foreground waves | AI Assistant |
 | 2026-07-08 | Redesigned login hero animation as a robotic welding production cell with conveyor ticks, traveling weld head, seam draw, spark shower, and reduced-motion support | AI Assistant |
