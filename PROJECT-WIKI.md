@@ -258,6 +258,43 @@ pnpm lint
 6. Implement ตาม conventions ใน section 4
 7. อัปเดต `PROJECT-WIKI.md` หากมี module / API / validation / data flow / workflow ใหม่
 
+### 5.6 External Sharing with ngrok
+
+ใช้ ngrok เพื่อแชร์ local dev server ให้ผู้อื่นเข้าถึงชั่วคราว
+
+1. สมัคร/ลงชื่อเข้าใช้ที่ https://dashboard.ngrok.com/signup
+2. ดาวน์โหลด ngrok สำหรับ Windows และเพิ่ม `ngrok.exe` ลงใน PATH
+3. ตั้งค่า authtoken ครั้งเดียว:
+
+```bash
+ngrok config add-authtoken <YOUR_NGROK_AUTHTOKEN>
+```
+
+4. เปิด Next.js dev server:
+
+```bash
+pnpm dev
+```
+
+5. เปิด tunnel อีก terminal หนึ่ง:
+
+```bash
+ngrok http 3000
+```
+
+6. คัดลอก URL `https://*.ngrok-free.app` ที่ขึ้นมาแชร์ได้เลย
+
+**หมายเหตุ:**
+- URL จะเปลี่ยนทุกครั้งที่รีสตาร์ท ngrok เว้นแต่จะจอง static domain
+- ระวังเรื่องความปลอดภัย อย่าแชร์ URL กับคนที่ไม่เกี่ยวข้อง และอย่าเปิดข้อมูลจริง
+- หาก Next.js แสดงข้อผิดพลาด **"Invalid Host header"** ให้เพิ่ม allowed host ใน `next.config.ts`:
+
+```ts
+const nextConfig: NextConfig = {
+  allowedDevHosts: [".ngrok-free.app"],
+};
+```
+
 ---
 
 ## 6. Implementation Notes for AI
@@ -275,6 +312,7 @@ pnpm lint
 
 | Date | Change | By |
 |------|--------|-----|
+| 2026-07-08 | Documented external sharing workflow using ngrok in PROJECT-WIKI.md | AI Assistant |
 | 2026-07-08 | Reworked login hero animation to match the provided reference image with soft factory silhouette, robotic arm, truck, packages, smokestacks, and layered blue foreground waves | AI Assistant |
 | 2026-07-08 | Redesigned login hero animation as a robotic welding production cell with conveyor ticks, traveling weld head, seam draw, spark shower, and reduced-motion support | AI Assistant |
 | 2026-07-08 | Added subtle SVG animations to login page illustration (smoke, dots, robotic arm, conveyor) | AI Assistant |
