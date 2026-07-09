@@ -1,7 +1,7 @@
 "use server";
 
 import { authenticate } from "../lib/auth";
-import type { LoginCredentials, LoginResult } from "../types/auth";
+import type { LoginCredentials, LoginError, LoginResult } from "../types/auth";
 
 /**
  * Server Action for login.
@@ -14,6 +14,6 @@ import type { LoginCredentials, LoginResult } from "../types/auth";
  * at runtime when types are re-exported from the action module. Import types
  * directly from `app/types/auth.ts` instead.
  */
-export async function login(credentials: LoginCredentials): Promise<LoginResult> {
+export async function login(credentials: LoginCredentials): Promise<LoginResult | LoginError> {
   return authenticate(credentials);
 }

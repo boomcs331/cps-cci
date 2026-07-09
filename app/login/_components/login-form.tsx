@@ -3,17 +3,61 @@
 import { useState, useTransition, type FormEvent } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { login } from "../actions";
-import type { LoginResult } from "../../types/auth";
+import type { LoginResult, LoginError, LoginSuccessResponse } from "../../types/auth";
 import { Modal } from "../../components/ui/modal";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [result, setResult] = useState<LoginResult | null>(null);
+  const [result, setResult] = useState<LoginResult | LoginError | null>(null);
   const [pending, startTransition] = useTransition();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalVariant, setModalVariant] = useState<"success" | "error">("success");
   const router = useRouter();
+
+  async function handleLogin(username: string, password: string): Promise<LoginResult | LoginError> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as {
+          statusCode?: number;
+          message?: string;
+          error?: string;
+        };
+        const error: LoginError = {
+          success: false,
+          message: data.message ?? data.error ?? "Invalid username or password",
+        };
+        return error;
+      }
+
+      const data = (await response.json()) as LoginSuccessResponse;
+
+      // Store JWT in localStorage for client-side access
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      return {
+        success: true,
+        data,
+      };
+    } catch (error) {
+      const errorResponse: LoginError = {
+        success: false,
+        message: `Unable to connect to the server (${API_BASE_URL}). Please check if the backend is running.`,
+      };
+      return errorResponse;
+    }
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -22,20 +66,20 @@ export function LoginForm() {
     const formData = new FormData(event.currentTarget);
     const username = String(formData.get("username") ?? "").trim();
     const password = String(formData.get("password") ?? "").trim();
-    const rememberMe = formData.get("rememberMe") === "true";
 
     if (!username || !password) {
-      setResult({
+      const error: LoginError = {
         success: false,
-        error: "Please enter your email or username and password.",
-      });
+        message: "Please enter your email or username and password.",
+      };
+      setResult(error);
       setModalVariant("error");
       setModalOpen(true);
       return;
     }
 
     startTransition(async () => {
-      const response = await login({ username, password, rememberMe });
+      const response = await handleLogin(username, password);
       setResult(response);
       if (response.success) {
         setModalVariant("success");
@@ -135,10 +179,7 @@ export function LoginForm() {
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <label
-            htmlFor="rememberMe"
-            className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#071642]"
-          >
+          <div className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#071642]">
             <input
               id="rememberMe"
               name="rememberMe"
@@ -148,7 +189,7 @@ export function LoginForm() {
               className="h-4 w-4 rounded border-slate-300 text-primary ring-primary/20 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-60"
             />
             Remember me
-          </label>
+          </div>
           <a
             href="mailto:support@cps.example.com?subject=Password%20reset"
             className="text-xs font-semibold text-[#1555e8] transition-colors hover:text-primary-hover hover:underline"
@@ -191,7 +232,9 @@ export function LoginForm() {
         description={
           modalVariant === "success"
             ? "Login successful! You will be redirected to the dashboard."
-            : result?.error ?? "Something went wrong. Please try again."
+            : result?.success === false
+              ? result.message
+              : "Something went wrong. Please try again."
         }
         primaryAction={{
           label: modalVariant === "success" ? "Continue" : "Try Again",

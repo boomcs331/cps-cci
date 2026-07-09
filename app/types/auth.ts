@@ -1,21 +1,29 @@
 export interface LoginCredentials {
   username: string;
   password: string;
-  rememberMe: boolean;
+}
+
+export interface LoginUser {
+  id: string;
+  username: string;
+  email: string;
+  role: "SUPER_ADMIN" | "ADMIN" | "USER";
+  status: "ACTIVE" | "INACTIVE" | "LOCKED";
 }
 
 export interface LoginSuccessResponse {
-  accessToken: string;
-  refreshToken?: string;
-  expiresIn?: number;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-  };
+  access_token: string;
+  token_type: "Bearer";
+  expires_in: string;
+  user: LoginUser;
 }
 
 export interface LoginResult {
-  success: boolean;
-  error?: string;
+  success: true;
+  data: LoginSuccessResponse;
+}
+
+export interface LoginError {
+  success: false;
+  message: string;
 }

@@ -64,9 +64,7 @@ d:\Project-2026\Project-CCI\cps/
 |--------|------|----------------|------------|
 | Root Layout | `app/layout.tsx` | กำหนด font, metadata, html/body structure | `next/font/google`, `globals.css` |
 | Login Page | `app/page.tsx` | หน้าเข้าสู่ระบบ `/` | `next/image`, `LoginForm`, `FactoryIllustration` |
-| Login Form | `app/login/_components/login-form.tsx` | Client Component ฟอร์มเข้าสู่ระบบ | `login` Server Action |
-| Login Action | `app/login/actions.ts` | Server Action thin adapter สำหรับ login | `app/lib/auth.ts` |
-| Auth Data Access | `app/lib/auth.ts` | ตรวจสอบ demo credentials หรือส่งต่อ external login API | `API_LOGIN_ENDPOINT`, `app/types/auth.ts` |
+| Login Form | `app/login/_components/login-form.tsx` | Client Component ฟอร์มเข้าสู่ระบบ, เรียก API โดยตรง | `NEXT_PUBLIC_API_BASE_URL`, `app/types/auth.ts` |
 | Auth Types | `app/types/auth.ts` | Type definitions สำหรับ login credentials/result | - |
 | Factory Illustration | `app/login/_components/factory-illustration.tsx` | ภาพประกอบฝั่งซ้ายของหน้า Login | - |
 | Dashboard Layout | `app/dashboard/layout.tsx` | Shared layout สำหรับทุกหน้าใต้ `/dashboard` แยก sidebar/topbar ออกจาก page content | `DashboardShell` |
@@ -93,10 +91,9 @@ app/layout.tsx
         │   └── uses → /cps-logo.png
         └── Right panel
             └── uses → LoginForm (Client Component)
-                └── on submit → app/login/actions.ts (Server Action)
-                    └── delegates to → app/lib/auth.ts (data-access layer)
-                        └── POST → API_LOGIN_ENDPOINT (external API)
-                            └── on success → redirect("/dashboard")
+                └── on submit → client-side fetch → NEXT_PUBLIC_API_BASE_URL/auth/login (cps-api backend)
+                    └── on success → store JWT in localStorage
+                    └── show Success modal → redirect to /dashboard
 ```
 
 > **Note:** ยังไม่มี database, state management, หรือ internal API routes อื่น ๆ การจัดการ token ยังเป็น placeholder รอ confirm API contract
@@ -109,19 +106,15 @@ app/layout.tsx
 
 | Service | Endpoint / URL | Usage | Where Used |
 |---------|---------------|-------|------------|
-| External Login API | `API_LOGIN_ENDPOINT` (env var) | ตรวจสอบชื่อผู้ใช้/รหัสผ่าน และคืน token | `app/lib/auth.ts` |
+| cps-api Backend | `NEXT_PUBLIC_API_BASE_URL` (default: http://localhost:3001) | ตรวจสอบชื่อผู้ใช้/รหัสผ่าน และคืน JWT token | `app/login/_components/login-form.tsx` |
 
-> **Note:** ค่า `API_LOGIN_ENDPOINT` ต้องกำหนดใน `.env` หรือ `.env.local` ก่อนใช้งาน ตัวอย่างอยู่ใน `.env.example`
+> **Note:** ค่า `NEXT_PUBLIC_API_BASE_URL` ต้องกำหนดใน `.env.local` ก่อนใช้งาน ตัวอย่างอยู่ใน `.env.example` ดูรายละเอียด API contract ที่ `PROJECT-WIKI-API.md`
 
 ### 3.2 Internal APIs (Next.js App Router)
 
 | API | Path | Method | Responsibility |
 |-----|------|--------|----------------|
-| Login Server Action | `app/login/actions.ts` | `POST` (เรียก external) | Thin adapter: รับข้อมูลจากฟอร์ม แล้ว delegate ไปยัง `app/lib/auth.ts` |
-| Auth Data Access | `app/lib/auth.ts` | `POST` (เรียก external) | ตรวจสอบ demo credentials หรือส่งต่อ external API จัดการ redirect และคืนผลลัพธ์ |
 | Dashboard Data Access | `app/lib/dashboard.ts` | อ่านข้อมูล (async) | คืนข้อมูล dashboard overview; ปัจจุบันใช้ mock data จาก `app/dashboard/_data/mock-data.ts` |
-
-> **Demo Credentials:** สำหรับทดสอบ ใช้ `admin.global` / `Passw0rd!` เพื่อ bypass external API และ return success ทันที
 
 ### 3.3 Client Feedback
 
@@ -129,43 +122,45 @@ app/layout.tsx
 - Login สำเร็จ: แสดง Success modal กด Continue เพื่อไป `/dashboard`
 - Login ไม่สำเร็จ: แสดง Error modal พร้อมปุ่ม Try Again / Cancel
 
-### 3.4 Login API Contract (Placeholder)
+### 3.4 Login API Contract (cps-api Backend)
+
+**Reference:** `PROJECT-WIKI-API.md`
 
 **Request:**
 ```json
-POST {API_LOGIN_ENDPOINT}
+POST {NEXT_PUBLIC_API_BASE_URL}/auth/login
 Content-Type: application/json
 
 {
-  "username": "string",
-  "password": "string",
-  "rememberMe": true
+  "username": "admin.global",
+  "password": "Passw0rd!"
 }
 ```
 
-**Expected Success Response:**
+**Success Response (200):**
 ```json
 {
-  "accessToken": "string",
-  "refreshToken": "string?",
-  "expiresIn": 10800,
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "Bearer",
+  "expires_in": "15m",
   "user": {
-    "id": "string",
-    "name": "string",
-    "email": "string"
+    "id": "...",
+    "username": "admin.global",
+    "email": "admin.global@example.com",
+    "role": "SUPER_ADMIN",
+    "status": "ACTIVE"
   }
 }
 ```
 
-**Expected Error Response:**
+**Error Response (401):**
 ```json
 {
-  "message": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
-  "error": "string?"
+  "statusCode": 401,
+  "message": "Invalid username or password",
+  "error": "Unauthorized"
 }
 ```
-
-> **TODO:** ปรับ contract นี้ให้ตรงกับ external API จริงเมื่อทราบรายละเอียด
 
 ### 3.5 API Naming & Validation Rules
 
@@ -446,6 +441,8 @@ const nextConfig: NextConfig = {
 
 | Date | Change | By |
 |------|--------|-----|
+| 2026-07-09 | Changed login from Server Action to client-side fetch: Moved API call to LoginForm component, store JWT in localStorage, removed auth.ts and actions.ts | AI Assistant |
+| 2026-07-09 | Integrated cps-api backend for login: Updated auth types to match API response, changed auth.ts to call POST /auth/login, store JWT in HttpOnly cookie, removed demo bypass | AI Assistant |
 | 2026-07-08 | Decoupled dashboard navigation config from `DashboardShell` into `app/config/navigation.ts` | AI Assistant |
 | 2026-07-08 | Introduced data-access seams: `app/lib/auth.ts` and `app/lib/dashboard.ts`; moved types to `app/types/` | AI Assistant |
 | 2026-07-08 | Refactored dashboard into modular feature components with extracted Panel, charts, domain types, and mock data layer | AI Assistant |
@@ -480,10 +477,10 @@ const nextConfig: NextConfig = {
 ## 8. Open Questions / TODO
 
 - [x] กำหนด business domain ของโปรเจกต์ให้ชัดเจน (Production Management System)
-- [ ] ยืนยัน external login API endpoint และปรับ contract ใน `app/login/actions.ts`
-- [ ] ตัดสินใจวิธีจัดเก็บ token (HttpOnly cookie / sessionStorage / localStorage)
-- [ ] เพิ่ม route protection สำหรับ `/dashboard`
-- [ ] ออกแบบ data model / API contract สำหรับส่วนอื่น ๆ ของระบบ
+- [x] ยืนยัน external login API endpoint และปรับ contract ใน login-form.tsx (cps-api backend)
+- [x] ตัดสินใจวิธีจัดเก็บ token (localStorage - client-side)
+- [x] เลือก database / backend service (cps-api: NestJS + PostgreSQL)
+- [ ] เพิ่ม route protection สำหรับ `/dashboard` (ใช้ JWT จาก localStorage)
+- [ ] ออกแบบ data model / API contract สำหรับส่วนอื่น ๆ ของระบบ (materials, productions, delivery)
 - [ ] เลือก state management หากจำเป็น (React Context, Zustand, Jotai, etc.)
-- [ ] เลือก database / backend service หากจำเป็น
 - [ ] กำหนด testing strategy (unit, integration, e2e)

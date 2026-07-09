@@ -1,35 +1,20 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import type { LoginCredentials, LoginResult, LoginSuccessResponse } from "../types/auth";
+import type { LoginCredentials, LoginError, LoginResult, LoginSuccessResponse } from "../types/auth";
 
-const DEMO_USERNAME = "admin.global";
-const DEMO_PASSWORD = "Passw0rd!";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
 /**
- * Authenticate a user against the configured identity provider.
+ * Authenticate a user against the cps-api backend.
  *
- * For demo purposes, hardcoded credentials (admin.global / Passw0rd!) bypass the
- * external API and return success immediately. In production this bypass must be
- * removed and the real `API_LOGIN_ENDPOINT` must be configured.
+ * Calls POST /auth/login endpoint from cps-api and stores the JWT token
+ * in an HttpOnly cookie for secure authentication.
  */
-export async function authenticate(credentials: LoginCredentials): Promise<LoginResult> {
-  if (
-    credentials.username === DEMO_USERNAME &&
-    credentials.password === DEMO_PASSWORD
-  ) {
-    return { success: true };
-  }
-
-  const endpoint = process.env.API_LOGIN_ENDPOINT;
-
-  if (!endpoint) {
-    return {
-      success: false,
-      error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
-    };
-  }
+export async function authenticate(credentials: LoginCredentials): Promise<LoginResult | LoginError> {
+  console.log("[auth] Attempting login to:", `${API_BASE_URL}/auth/login`);
 
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -38,43 +23,53 @@ export async function authenticate(credentials: LoginCredentials): Promise<Login
       body: JSON.stringify({
         username: credentials.username,
         password: credentials.password,
-        rememberMe: credentials.rememberMe,
       }),
+      cache: "no-store",
     });
+
+    console.log("[auth] Response status:", response.status);
 
     if (!response.ok) {
       const data = (await response.json().catch(() => ({}))) as {
+        statusCode?: number;
         message?: string;
         error?: string;
       };
-      return {
+      console.log("[auth] Error response:", data);
+      const error: LoginError = {
         success: false,
-        error:
-          data.message ??
-          data.error ??
-          "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
+        message: data.message ?? data.error ?? "Invalid username or password",
       };
+      return error;
     }
 
     const data = (await response.json()) as LoginSuccessResponse;
+    console.log("[auth] Login successful, user:", data.user.username);
 
-    // TODO: Implement secure token storage after API contract is confirmed.
-    // Options:
-    // 1. Set HttpOnly cookie via Set-Cookie header from external API
-    // 2. Use Next.js API route as proxy to set cookie
-    // 3. Store in sessionStorage/localStorage only if the token is short-lived
-    //    and the app is deployed over HTTPS
-    void data;
+    // Store JWT in HttpOnly cookie for security
+    const cookieStore = await cookies();
+    cookieStore.set("access_token", data.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 15, // 15 minutes (expires_in is "15m")
+      path: "/",
+    });
 
-    redirect("/dashboard");
+    return {
+      success: true,
+      data,
+    };
   } catch (error) {
+    console.error("[auth] Network error:", error);
     if (error instanceof Error && error.message === "NEXT_REDIRECT") {
       throw error;
     }
 
-    return {
+    const errorResponse: LoginError = {
       success: false,
-      error: "ไม่สามารถเชื่อมต่อกับระบบได้ กรุณาลองใหม่อีกครั้ง",
+      message: `Unable to connect to the server (${API_BASE_URL}). Please check if the backend is running.`,
     };
+    return errorResponse;
   }
 }
