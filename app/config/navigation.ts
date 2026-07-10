@@ -11,7 +11,7 @@ export type NavItem = {
 export const dashboardNavigation: NavItem[] = [
   { label: "User Management", href: "/dashboard/users", icon: "users" },
   { label: "Materials", href: "/dashboard/materials", icon: "box" },
-  { label: "Productions", href: "/dashboard", icon: "factory", active: true },
+  { label: "Productions", href: "/dashboard", icon: "factory" },
   { label: "Delivery", href: "/dashboard/delivery", icon: "truck" },
   { label: "Master Data", href: "/dashboard/master-data", icon: "clipboard", expandable: true },
 ];

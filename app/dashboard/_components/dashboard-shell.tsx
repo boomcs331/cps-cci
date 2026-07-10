@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   BellIcon,
   BoxIcon,
@@ -146,18 +147,25 @@ function SidebarContent({
   navItems: NavItem[];
   onNavigate?: () => void;
 }) {
+  const pathname = usePathname();
+
   return (
     <>
       <nav className="flex-1 space-y-2 px-4 pt-5">
         {navItems.map((item) => {
           const Icon = iconMap[item.icon];
+          const isActive =
+            item.href === "/dashboard"
+              ? pathname === item.href
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
+
           return (
             <Link
               key={item.label}
               href={item.href}
               onClick={onNavigate}
               className={`flex h-[52px] items-center gap-4 rounded-lg px-4 text-sm font-semibold transition ${
-                item.active
+                isActive
                   ? "bg-[#1057e8] text-white shadow-[0_12px_26px_rgba(16,87,232,0.22)]"
                   : "text-slate-600 hover:bg-blue-50 hover:text-[#1057e8]"
               }`}

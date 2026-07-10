@@ -96,7 +96,8 @@ app/layout.tsx
                     └── show Success modal → redirect to /dashboard
 ```
 
-> **Note:** ยังไม่มี database, state management, หรือ internal API routes อื่น ๆ การจัดการ token ยังเป็น placeholder รอ confirm API contract
+> **Note:** ใช้ client-side fetch และ localStorage เพื่อให้เห็น request ใน browser Network tab
+> **CORS Requirement:** cps-api backend ต้อง enable CORS สำหรับ origin `http://localhost:3000` หรือใช้ Server Action แทน
 
 ---
 
@@ -109,6 +110,7 @@ app/layout.tsx
 | cps-api Backend | `NEXT_PUBLIC_API_BASE_URL` (default: http://localhost:3001) | ตรวจสอบชื่อผู้ใช้/รหัสผ่าน และคืน JWT token | `app/login/_components/login-form.tsx` |
 
 > **Note:** ค่า `NEXT_PUBLIC_API_BASE_URL` ต้องกำหนดใน `.env.local` ก่อนใช้งาน ตัวอย่างอยู่ใน `.env.example` ดูรายละเอียด API contract ที่ `PROJECT-WIKI-API.md`
+> **CORS:** cps-api backend ต้อง enable CORS สำหรับ origin `http://localhost:3000` ก่อนใช้งาน
 
 ### 3.2 Internal APIs (Next.js App Router)
 
